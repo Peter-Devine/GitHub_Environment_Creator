@@ -41,6 +41,16 @@ class GitCreatorFunction():
         else:
             print(f"Repo {repo_name} successfully created")
 
+    # Delete given repo
+    def delete_repo(self, username, repo_name)
+        headers = self.get_headers()
+
+        url = f"https://api.github.com/repos/{username}/{repo_name}"
+        r = requests.delete(url, headers = headers)
+
+        if r.status_code != 204:
+            raise Exception(f"Delete of {username}/{repo_name} failed with status code {r.status_code}. Message:\n {r.content}")
+
     # Copies all the files of a given user's repo to another user's repo
     def copy_repo(self, source_username, destination_username, source_repo_name, destination_repo_name):
         headers = self.get_headers()
@@ -60,7 +70,7 @@ class GitCreatorFunction():
             base64_contents = base64_bytes.decode('utf-8')
 
             post_data = {
-                "message": f"Adding {path} from the {source_repo_url} project",
+                "message": f"Adding {os.path.basename(path)} to the project",
                 "content": base64_contents
             }
 
