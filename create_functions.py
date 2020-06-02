@@ -52,7 +52,6 @@ class GitCreatorFunction():
             return requests.get(url, headers = headers).content
 
         def write_to_repo(path, contents):
-            print(contents)
 
             # Strings need to be converted to Base 64 to upload to GitHub
             contents = contents.decode('utf-8')
