@@ -42,7 +42,7 @@ class GitCreatorFunction():
             print(f"Repo {repo_name} successfully created")
 
     # Delete given repo
-    def delete_repo(self, username, repo_name)
+    def delete_repo(self, username, repo_name):
         headers = self.get_headers()
 
         url = f"https://api.github.com/repos/{username}/{repo_name}"
@@ -146,3 +146,74 @@ class GitCreatorFunction():
 
         if r.status_code != 201:
             raise Exception(f"Comment creation on {username}/{repo_name}/{issue_number} failed with error code {r.status_code} and message:\n{r.content}")
+    
+    def get(self, url):
+        headers = self.get_headers()
+        r = requests.get(url, headers = headers)
+        return json.loads(r.content)
+
+    def close_issue(self, username, repo_name, issue_number):
+        headers = self.get_headers()
+
+        url = f"https://api.github.com/repos/{username}/{repo_name}/issues/{issue_number}"
+
+        post_data = {
+            "state": "closed"
+        }
+
+        r = requests.patch(url, json = post_data, headers = headers)
+
+        if r.status_code != 200:
+            raise Exception(f"Could not close issue {issue_number} from {username}/{repo_name}")
+
+    def copy_issue(self, issue_data, destination_username, destination_repo):
+
+        issue_title = issue_data["title"]
+        issue_body = issue_data["body"]
+        issue_labels = issue_data["labels"]
+
+        new_issue_number = create_issue(destination_username,
+                                        destination_repo,
+                                        issue_title,
+                                        issue_body,
+                                        issue_labels)
+
+        if issue_data["comments"] > 0:
+            comments_data = self.get(issue_data["comments_url"])
+
+            for comment_data in comments_data:
+                comment_body = comment_data["body"]
+
+                self.comment_on_issue(destination_username,
+                                      destination_repo,
+                                      new_issue_number,
+                                      comment_body)
+
+        if issue_data["state"] == "closed":
+            close_issue(destination_username, destination_repo, new_issue_number)
+
+
+    def copy_all_issues(self, source_username, source_repo_name, destination_username, destination_repo_name):
+        headers = self.get_headers()
+
+        url = f"https://api.github.com/repos/{source_username}/{source_repo_name}/issues"
+
+        parameters = {
+             "state": "open"
+        }
+
+        def iterate_issue_list(url):
+            print(f"Getting issues from {url}")
+            r = requests.get(url, json = parameters, headers = headers)
+
+            found_issues = json.loads(r.content)
+
+            for found_issue in found_issues:
+                self.copy_issue(found_issue, destination_username, destination_repo_name)
+
+            if "next" in r.links.keys():
+                populate_issue_list(r.links["next"]["url"])
+
+        iterate_issue_list(url)
+
+        return issue_list
